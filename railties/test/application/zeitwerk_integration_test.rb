@@ -56,6 +56,28 @@ class ZeitwerkIntegrationTest < ActiveSupport::TestCase
     assert RESTfulController
   end
 
+  test "root directories manually set by the user are honored" do
+    app_file "config/initializers/namespaces.rb", <<~RUBY
+      require "pathname"
+
+      # Unrealistic but technically simple for a test.
+      module Controllers; end
+      module Models; end
+
+      Rails.autoloaders.main.tap do |main|
+        main.push_dir(Pathname.new("app/controllers"), namespace: Controllers)
+        main.push_dir("app/models", namespace: Models)
+      end
+    RUBY
+
+    app_file "app/controllers/x.rb", "Controllers::X = true"
+    app_file "app/models/x.rb", "Models::X = true"
+
+    boot
+
+    assert Controllers::X
+    assert Models::X
+  end
 
   test "the once autoloader can autoload from initializers" do
     app_file "extras0/x.rb", "X = 0"
